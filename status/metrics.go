@@ -1,6 +1,8 @@
 package status
 
 import (
+	"fmt"
+
 	pmetrics "github.com/awslabs/operatorpkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -39,6 +41,23 @@ var ConditionDuration = pmetrics.NewPrometheusHistogram(
 	},
 )
 
+func conditionDurationMetric(objectName string) pmetrics.ObservationMetric {
+	return pmetrics.NewPrometheusHistogram(
+		metrics.Registry,
+		prometheus.HistogramOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, MetricSubsystem),
+			Name:      "transition_seconds",
+			Help:      "The amount of time a condition was in a given state before transitioning. e.g. Alarm := P99(Updated=False) > 5 minutes",
+		},
+		[]string{
+			MetricLabelGroup,
+			MetricLabelConditionType,
+			MetricLabelConditionStatus,
+		},
+	)
+}
+
 // Cardinality is limited to # objects * # conditions
 var ConditionCount = pmetrics.NewPrometheusGauge(
 	metrics.Registry,
@@ -58,6 +77,26 @@ var ConditionCount = pmetrics.NewPrometheusGauge(
 		MetricLabelConditionReason,
 	},
 )
+
+func conditionCountMetric(objectName string) pmetrics.GaugeMetric {
+	return pmetrics.NewPrometheusGauge(
+		metrics.Registry,
+		prometheus.GaugeOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, MetricSubsystem),
+			Name:      "count",
+			Help:      "The number of an condition for a given object, type and status. e.g. Alarm := Available=False > 0",
+		},
+		[]string{
+			MetricLabelNamespace,
+			MetricLabelName,
+			MetricLabelGroup,
+			MetricLabelConditionType,
+			MetricLabelConditionStatus,
+			MetricLabelConditionReason,
+		},
+	)
+}
 
 // Cardinality is limited to # objects * # conditions
 // NOTE: This metric is based on a requeue so it won't show the current status seconds with extremely high accuracy.
@@ -81,6 +120,26 @@ var ConditionCurrentStatusSeconds = pmetrics.NewPrometheusGauge(
 	},
 )
 
+func conditionCurrentStatusSecondsMetric(objectName string) pmetrics.GaugeMetric {
+	return pmetrics.NewPrometheusGauge(
+		metrics.Registry,
+		prometheus.GaugeOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, MetricSubsystem),
+			Name:      "current_status_seconds",
+			Help:      "The current amount of time in seconds that a status condition has been in a specific state. Alarm := P99(Updated=Unknown) > 5 minutes",
+		},
+		[]string{
+			MetricLabelNamespace,
+			MetricLabelName,
+			MetricLabelGroup,
+			MetricLabelConditionType,
+			MetricLabelConditionStatus,
+			MetricLabelConditionReason,
+		},
+	)
+}
+
 // Cardinality is limited to # objects * # conditions
 var ConditionTransitionsTotal = pmetrics.NewPrometheusCounter(
 	metrics.Registry,
@@ -99,6 +158,25 @@ var ConditionTransitionsTotal = pmetrics.NewPrometheusCounter(
 	},
 )
 
+// Cardinality is limited to # objects * # conditions
+func conditionTransitionsTotalMetric(objectName string) pmetrics.CounterMetric {
+	return pmetrics.NewPrometheusCounter(
+		metrics.Registry,
+		prometheus.CounterOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, MetricSubsystem),
+			Name:      "transitions_total",
+			Help:      "The count of transitions of a given object, type and status.",
+		},
+		[]string{
+			MetricLabelGroup,
+			MetricLabelConditionType,
+			MetricLabelConditionStatus,
+			MetricLabelConditionReason,
+		},
+	)
+}
+
 var TerminationCurrentTimeSeconds = pmetrics.NewPrometheusGauge(
 	metrics.Registry,
 	prometheus.GaugeOpts{
@@ -115,6 +193,23 @@ var TerminationCurrentTimeSeconds = pmetrics.NewPrometheusGauge(
 	},
 )
 
+func terminationCurrentTimeSecondsMetric(objectName string) pmetrics.GaugeMetric {
+	return pmetrics.NewPrometheusGauge(
+		metrics.Registry,
+		prometheus.GaugeOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, TerminationSubsystem),
+			Name:      "current_time_seconds",
+			Help:      "The current amount of time in seconds that an object has been in terminating state.",
+		},
+		[]string{
+			MetricLabelNamespace,
+			MetricLabelName,
+			MetricLabelGroup,
+		},
+	)
+}
+
 var TerminationDuration = pmetrics.NewPrometheusHistogram(
 	metrics.Registry,
 	prometheus.HistogramOpts{
@@ -128,3 +223,18 @@ var TerminationDuration = pmetrics.NewPrometheusHistogram(
 		MetricLabelKind,
 	},
 )
+
+func terminationDurationMetric(objectName string) pmetrics.ObservationMetric {
+	return pmetrics.NewPrometheusHistogram(
+		metrics.Registry,
+		prometheus.HistogramOpts{
+			Namespace: MetricNamespace,
+			Subsystem: fmt.Sprintf("%s_%s", objectName, TerminationSubsystem),
+			Name:      "duration_seconds",
+			Help:      "The amount of time taken by an object to terminate completely.",
+		},
+		[]string{
+			MetricLabelGroup,
+		},
+	)
+}
