@@ -9,6 +9,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	pmetrics "github.com/awslabs/operatorpkg/metrics"
@@ -38,21 +39,10 @@ type Controller[T Object] struct {
 	TerminationDuration           pmetrics.ObservationMetric
 }
 
-type ControllerOpts struct {
-	GVK schema.GroupVersionKind
-}
-
-func NewController[T Object](client client.Client, eventRecorder record.EventRecorder, opts ...ControllerOpts) *Controller[T] {
-	var gvk schema.GroupVersionKind
-	switch len(opts) {
-	case 0:
-		gvk = object.GVK(object.New[T]())
-	case 1:
-		gvk = opts[0].GVK
-	default:
-		panic("expected no or one argument for controller options")
-	}
-
+func NewController[T Object](client client.Client, eventRecorder record.EventRecorder) *Controller[T] {
+	obj := reflect.New(reflect.TypeOf(*new(T)).Elem()).Interface().(runtime.Object)
+	obj.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	gvk := object.GVK(obj)
 	return &Controller[T]{
 		objectGVK:                     gvk,
 		kubeClient:                    client,
@@ -79,14 +69,12 @@ func (c *Controller[T]) Reconcile(ctx context.Context, req reconcile.Request) (r
 }
 
 type GenericObjectController[T client.Object] struct {
-	*Controller[*unstructuredAdapter]
+	*Controller[*unstructuredAdapter[T]]
 }
 
 func NewGenericObjectController[T client.Object](client client.Client, eventRecorder record.EventRecorder) *GenericObjectController[T] {
 	return &GenericObjectController[T]{
-		Controller: NewController[*unstructuredAdapter](client, eventRecorder, ControllerOpts{
-			GVK: object.GVK(object.New[T]()),
-		}),
+		Controller: NewController[*unstructuredAdapter[T]](client, eventRecorder),
 	}
 }
 
@@ -99,7 +87,7 @@ func (c *GenericObjectController[T]) Register(_ context.Context, m manager.Manag
 }
 
 func (c *GenericObjectController[T]) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	return c.reconcile(ctx, req, NewUnstructuredAdapter(object.New[T]()))
+	return c.reconcile(ctx, req, NewUnstructuredAdapter[T](object.New[T]()))
 }
 
 func (c *Controller[T]) reconcile(ctx context.Context, req reconcile.Request, o Object) (reconcile.Result, error) {

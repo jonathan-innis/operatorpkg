@@ -34,8 +34,7 @@ var _ = Describe("Unstructured Adapter", func() {
 			Version: "testVersion",
 			Kind:    "testKind",
 		})
-
-		conditionObj := status.NewUnstructuredAdapter(testObject)
+		conditionObj := status.NewUnstructuredAdapter[*TestObject](testObject)
 		Expect(conditionObj).ToNot(BeNil())
 		Expect(conditionObj.StatusConditions().Get("TestType").Message).To(Equal("test message"))
 		Expect(conditionObj.StatusConditions().Get("TestType").Status).To(Equal(metav1.ConditionFalse))
@@ -69,7 +68,7 @@ var _ = Describe("Unstructured Adapter", func() {
 				Message: "test message",
 			},
 		}
-		conditionObj := status.NewUnstructuredAdapter(testObject)
+		conditionObj := status.NewUnstructuredAdapter[*TestObject](testObject)
 		conditionObj.SetConditions(conditions)
 		c, found, err := unstructured.NestedSlice(testObject.Object, "status", "conditions")
 		Expect(err).To(BeNil())
