@@ -54,12 +54,12 @@ var _ = Describe("Controller", func() {
 		controller = status.NewController[*test.CustomObject](kubeClient, recorder, status.EmitDeprecatedMetrics)
 	})
 	AfterEach(func() {
-		registry.Unregister(controller.ConditionDuration.(*pmetrics.PrometheusHistogram).HistogramVec)
-		registry.Unregister(controller.ConditionCount.(*pmetrics.PrometheusGauge).GaugeVec)
-		registry.Unregister(controller.ConditionCurrentStatusSeconds.(*pmetrics.PrometheusGauge).GaugeVec)
-		registry.Unregister(controller.ConditionTransitionsTotal.(*pmetrics.PrometheusCounter).CounterVec)
-		registry.Unregister(controller.TerminationCurrentTimeSeconds.(*pmetrics.PrometheusGauge).GaugeVec)
-		registry.Unregister(controller.TerminationDuration.(*pmetrics.PrometheusHistogram).HistogramVec)
+		controller.ConditionDuration.(*pmetrics.PrometheusHistogram).HistogramVec.Reset()
+		controller.ConditionCount.(*pmetrics.PrometheusGauge).GaugeVec.Reset()
+		controller.ConditionCurrentStatusSeconds.(*pmetrics.PrometheusGauge).GaugeVec.Reset()
+		controller.ConditionTransitionsTotal.(*pmetrics.PrometheusCounter).CounterVec.Reset()
+		controller.TerminationCurrentTimeSeconds.(*pmetrics.PrometheusGauge).GaugeVec.Reset()
+		controller.TerminationDuration.(*pmetrics.PrometheusHistogram).HistogramVec.Reset()
 	})
 	It("should emit termination metrics when deletion timestamp is set", func() {
 		testObject := test.Object(&test.CustomObject{})
